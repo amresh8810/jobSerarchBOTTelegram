@@ -15,7 +15,9 @@ import json
 import datetime
 import tempfile
 import hashlib
+import threading
 import PyPDF2
+from flask import Flask
 import google.generativeai as genai
 from deep_translator import GoogleTranslator
 
@@ -38,6 +40,17 @@ from job_searcher import JobSearcher
 
 # ─── Load environment variables ─────────────────────────────────────────────
 load_dotenv()
+
+# Health Check Server (For Cloud Deployment)
+app_web = Flask(__name__)
+
+@app_web.route('/')
+def home():
+    return "Bot is running! 🚀"
+
+def run_health_check_server():
+    port = int(os.environ.get("PORT", 8080))
+    app_web.run(host='0.0.0.0', port=port)
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
@@ -1039,6 +1052,11 @@ def main():
         raise ValueError("RAPIDAPI_KEY .env file mein set nahi hai!")
 
     print("[BOT] Telegram Job Search Bot starting...")
+    
+    # Start Health Check Server in background
+    print("[WEB] Starting Health Check Server...")
+    threading.Thread(target=run_health_check_server, daemon=True).start()
+    
     print("[OK]  Press Ctrl+C to stop")
 
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
